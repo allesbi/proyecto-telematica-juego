@@ -2,54 +2,144 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Space Invaders - Proyecto Telemática</title>
+    <title>Retro Space Invaders - Proyecto Telemática</title>
     <style>
-        body { background: #000; color: #fff; text-align: center; font-family: Arial, sans-serif; }
-        canvas { border: 2px solid #fff; background: #000; display: block; margin: 20px auto; }
-        h1 { color: #0f0; }
+        body { 
+            background: #0b0e14; 
+            color: #0f0; 
+            text-align: center; 
+            font-family: 'Courier New', Courier, monospace; 
+            margin: 0; 
+            overflow: hidden; 
+        }
+        canvas { 
+            border: 4px solid #333; 
+            background: #000; 
+            box-shadow: 0 0 20px #0f0; 
+            display: block; 
+            margin: 20px auto; 
+        }
+        #ui { 
+            position: absolute; 
+            top: 20px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            width: 600px; 
+            display: flex; 
+            justify-content: space-between; 
+            font-size: 20px; 
+        }
+        #restartBtn { 
+            display: none; 
+            position: absolute; 
+            top: 65%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            padding: 15px 30px; 
+            font-size: 20px; 
+            background: #0f0; 
+            color: #000; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: bold; 
+            border-radius: 5px; 
+            z-index: 100;
+        }
+        #restartBtn:hover { background: #fff; }
     </style>
 </head>
 <body>
-    <h1>SPACE INVADERS - TELEMÁTICA</h1>
-    <p>Usa las flechas para moverte y ESPACIO para disparar.</p>
-    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <div id="ui">
+        <span>PUNTOS: <span id="score">0</span></span>
+        <span>SISTEMA TELEMÁTICO</span>
+    </div>
+    <canvas id="gameCanvas" width="600" height="500"></canvas>
+    <button id="restartBtn" onclick="init()">REINICIAR SERVICIO</button>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
+        const scoreEl = document.getElementById("score");
+        const restartBtn = document.getElementById("restartBtn");
 
-        let ship = { x: 280, y: 360, w: 40, h: 20, color: "#0f0" };
-        let bullets = [];
-        let enemies = [];
-        let score = 0;
+        let ship, bullets, enemies, enemyDir, enemySpeed, score, gameActive;
 
-        // Crear enemigos
-        for(let i=0; i<5; i++) {
-            for(let j=0; j<8; j++) {
-                enemies.push({ x: 50 + j*60, y: 30 + i*40, w: 30, h: 20, alive: true });
+        function init() {
+            ship = { x: 280, y: 450, w: 30, h: 20 };
+            bullets = [];
+            enemies = [];
+            enemyDir = 1;
+            enemySpeed = 1.2;
+            score = 0;
+            gameActive = true;
+            scoreEl.innerText = score;
+            restartBtn.style.display = "none";
+
+            // Crear horda de aliens
+            for(let r=0; r<4; r++) {
+                for(let c=0; c<8; c++) {
+                    enemies.push({ x: 60 + c*60, y: 50 + r*40, w: 30, h: 20, alive: true });
+                }
             }
+            update();
         }
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Dibujar Nave
-            ctx.fillStyle = ship.color;
-            ctx.fillRect(ship.x, ship.y, ship.w, ship.h);
+        function drawShip() {
+            ctx.fillStyle = "#0f0";
+            ctx.fillRect(ship.x + 12, ship.y - 5, 6, 5);
+            ctx.fillRect(ship.x, ship.y, 30, 10);
+            ctx.fillRect(ship.x + 5, ship.y + 10, 20, 5);
+        }
 
-            // Dibujar Balas
-            bullets.forEach((b, i) => {
-                b.y -= 5;
-                ctx.fillStyle = "yellow";
-                ctx.fillRect(b.x, b.y, 5, 10);
-                if(b.y < 0) bullets.splice(i, 1);
+        function drawAlien(x, y) {
+            ctx.fillStyle = "#ff2d2d";
+            ctx.fillRect(x + 5, y, 20, 5);
+            ctx.fillRect(x, y + 5, 30, 5);
+            ctx.fillRect(x + 5, y + 10, 5, 5);
+            ctx.fillRect(x + 20, y + 10, 5, 5);
+        }
+
+        function showEndMessage(title, color, subtitle) {
+            ctx.fillStyle = "rgba(0,0,0,0.7)";
+            ctx.fillRect(0,0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = color;
+            ctx.font = "bold 40px 'Courier New'";
+            ctx.textAlign = "center";
+            ctx.fillText(title, canvas.width/2, canvas.height/2 - 20);
+            
+            ctx.fillStyle = "#fff";
+            ctx.font = "18px 'Courier New'";
+            ctx.fillText(subtitle, canvas.width/2, canvas.height/2 + 30);
+            
+            restartBtn.style.display = "block";
+        }
+
+        function update() {
+            if(!gameActive) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawShip();
+
+            // Balas
+            bullets.forEach((b, bi) => {
+                b.y -= 7;
+                ctx.fillStyle = "#fff";
+                ctx.fillRect(b.x, b.y, 3, 10);
+                if(b.y < 0) bullets.splice(bi, 1);
             });
 
-            // Dibujar Enemigos
+            // Aliens
+            let touchEdge = false;
+            let anyAlive = false;
+
             enemies.forEach(e => {
                 if(e.alive) {
-                    ctx.fillStyle = "red";
-                    ctx.fillRect(e.x, e.y, e.w, e.h);
+                    anyAlive = true;
+                    drawAlien(e.x, e.y);
+                    e.x += enemySpeed * enemyDir;
+                    
+                    if(e.x + e.w > canvas.width || e.x < 0) touchEdge = true;
                     
                     // Colisión con balas
                     bullets.forEach((b, bi) => {
@@ -57,23 +147,40 @@
                             e.alive = false;
                             bullets.splice(bi, 1);
                             score += 10;
+                            scoreEl.innerText = score;
                         }
                     });
+
+                    // Derrota: Aliens llegan abajo
+                    if(e.y + e.h > ship.y) {
+                        gameActive = false;
+                        showEndMessage("SYSTEM FAILURE", "#ff0000", "GAME OVER - ALIENS INFILTRATED");
+                    }
                 }
             });
 
-            ctx.fillStyle = "white";
-            ctx.fillText("Score: " + score, 10, 20);
-            requestAnimationFrame(draw);
+            if(touchEdge) {
+                enemyDir *= -1;
+                enemies.forEach(e => e.y += 15);
+                enemySpeed += 0.05;
+            }
+
+            // Victoria: No quedan aliens
+            if(!anyAlive && gameActive) {
+                gameActive = false;
+                showEndMessage("VICTORIA TOTAL", "#0f0", "SERVICIO DESPLEGADO CON ÉXITO");
+            }
+
+            if(gameActive) requestAnimationFrame(update);
         }
 
         window.addEventListener("keydown", e => {
-            if(e.key === "ArrowLeft" && ship.x > 0) ship.x -= 15;
-            if(e.key === "ArrowRight" && ship.x < canvas.width - ship.w) ship.x += 15;
-            if(e.key === " ") bullets.push({ x: ship.x + 18, y: ship.y });
+            if(e.key === "ArrowLeft" && ship.x > 0) ship.x -= 20;
+            if(e.key === "ArrowRight" && ship.x < canvas.width - ship.w) ship.x += 20;
+            if(e.key === " " && gameActive) bullets.push({ x: ship.x + 14, y: ship.y });
         });
 
-        draw();
+        init();
     </script>
 </body>
 </html>
