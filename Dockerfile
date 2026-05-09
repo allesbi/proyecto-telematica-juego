@@ -11,3 +11,4 @@ EXPOSE 80
 # 4. Punto de Entrada: Ejecutamos el servidor en modo "foreground" (primer plano)
 # Esto es esencial para que el contenedor de Docker no se detenga inmediatamente
 CMD ["nginx", "-g", "daemon off;"]
+
