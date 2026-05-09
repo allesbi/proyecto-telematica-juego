@@ -4,66 +4,32 @@
     <meta charset="UTF-8">
     <title>Retro Space Invaders - Proyecto Telemática</title>
     <style>
-        body { 
-            background: #0b0e14; 
-            color: #0f0; 
-            text-align: center; 
-            font-family: 'Courier New', Courier, monospace; 
-            margin: 0; 
-            overflow: hidden; 
-        }
-        canvas { 
-            border: 4px solid #333; 
-            background: #000; 
-            box-shadow: 0 0 20px #0f0; 
-            display: block; 
-            margin: 20px auto; 
-        }
-        #ui { 
-            position: absolute; 
-            top: 20px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            width: 600px; 
-            display: flex; 
-            justify-content: space-between; 
-            font-size: 20px; 
-        }
-        #restartBtn { 
-            display: none; 
-            position: absolute; 
-            top: 65%; 
-            left: 50%; 
-            transform: translate(-50%, -50%); 
-            padding: 15px 30px; 
-            font-size: 20px; 
-            background: #0f0; 
-            color: #000; 
-            border: none; 
-            cursor: pointer; 
-            font-weight: bold; 
-            border-radius: 5px; 
-            z-index: 100;
-        }
-        #restartBtn:hover { background: #fff; }
+        /* Estilos CSS para definir la interfaz visual del servicio */
+        body { background: #0b0e14; color: #0f0; text-align: center; font-family: 'Courier New', monospace; margin: 0; overflow: hidden; }
+        canvas { border: 4px solid #333; background: #000; box-shadow: 0 0 20px #0f0; display: block; margin: 20px auto; }
+        #ui { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 600px; display: flex; justify-content: space-between; font-size: 20px; }
+        #restartBtn { display: none; position: absolute; top: 65%; left: 50%; transform: translate(-50%, -50%); padding: 15px 30px; font-size: 20px; background: #0f0; color: #000; border: none; cursor: pointer; font-weight: bold; border-radius: 5px; z-index: 100; }
     </style>
 </head>
 <body>
     <div id="ui">
         <span>PUNTOS: <span id="score">0</span></span>
-        <span>SISTEMA TELEMÁTICO</span>
+        <span>SISTEMA TELEMÁTICO ACTIVO</span>
     </div>
     <canvas id="gameCanvas" width="600" height="500"></canvas>
     <button id="restartBtn" onclick="init()">REINICIAR SERVICIO</button>
 
     <script>
+        // Selección de elementos del DOM para manipular la interfaz
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
         const scoreEl = document.getElementById("score");
         const restartBtn = document.getElementById("restartBtn");
 
+        // Variables de estado global de la aplicación
         let ship, bullets, enemies, enemyDir, enemySpeed, score, gameActive;
 
+        // Función de inicialización: Restablece el entorno del servicio
         function init() {
             ship = { x: 280, y: 450, w: 30, h: 20 };
             bullets = [];
@@ -75,15 +41,16 @@
             scoreEl.innerText = score;
             restartBtn.style.display = "none";
 
-            // Crear horda de aliens
+            // Lógica de generación de la matriz de enemigos (Horda)
             for(let r=0; r<4; r++) {
                 for(let c=0; c<8; c++) {
                     enemies.push({ x: 60 + c*60, y: 50 + r*40, w: 30, h: 20, alive: true });
                 }
             }
-            update();
+            update(); // Inicia el ciclo de ejecución
         }
 
+        // Renderizado de la entidad Jugador (Nave)
         function drawShip() {
             ctx.fillStyle = "#0f0";
             ctx.fillRect(ship.x + 12, ship.y - 5, 6, 5);
@@ -91,6 +58,7 @@
             ctx.fillRect(ship.x + 5, ship.y + 10, 20, 5);
         }
 
+        // Renderizado de entidades enemigas (Aliens)
         function drawAlien(x, y) {
             ctx.fillStyle = "#ff2d2d";
             ctx.fillRect(x + 5, y, 20, 5);
@@ -99,49 +67,47 @@
             ctx.fillRect(x + 20, y + 10, 5, 5);
         }
 
+        // Función para mostrar mensajes de estado del sistema (Victoria/Derrota)
         function showEndMessage(title, color, subtitle) {
-            ctx.fillStyle = "rgba(0,0,0,0.7)";
+            ctx.fillStyle = "rgba(0,0,0,0.8)";
             ctx.fillRect(0,0, canvas.width, canvas.height);
-            
             ctx.fillStyle = color;
             ctx.font = "bold 40px 'Courier New'";
             ctx.textAlign = "center";
             ctx.fillText(title, canvas.width/2, canvas.height/2 - 20);
-            
             ctx.fillStyle = "#fff";
             ctx.font = "18px 'Courier New'";
             ctx.fillText(subtitle, canvas.width/2, canvas.height/2 + 30);
-            
             restartBtn.style.display = "block";
         }
 
+        // Bucle principal de actualización (Lógica de negocio del servicio)
         function update() {
             if(!gameActive) return;
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpieza del canvas para el siguiente frame
             drawShip();
 
-            // Balas
+            // Gestión de proyectiles y su desplazamiento vertical
             bullets.forEach((b, bi) => {
                 b.y -= 7;
                 ctx.fillStyle = "#fff";
                 ctx.fillRect(b.x, b.y, 3, 10);
-                if(b.y < 0) bullets.splice(bi, 1);
+                if(b.y < 0) bullets.splice(bi, 1); // Optimización: Eliminar balas fuera de rango
             });
 
-            // Aliens
             let touchEdge = false;
             let anyAlive = false;
 
+            // Procesamiento de colisiones y movimiento de la IA enemiga
             enemies.forEach(e => {
                 if(e.alive) {
                     anyAlive = true;
                     drawAlien(e.x, e.y);
                     e.x += enemySpeed * enemyDir;
-                    
                     if(e.x + e.w > canvas.width || e.x < 0) touchEdge = true;
                     
-                    // Colisión con balas
+                    // Verificación de colisión Proyectil-Enemigo
                     bullets.forEach((b, bi) => {
                         if(b.x > e.x && b.x < e.x + e.w && b.y > e.y && b.y < e.y + e.h) {
                             e.alive = false;
@@ -151,7 +117,7 @@
                         }
                     });
 
-                    // Derrota: Aliens llegan abajo
+                    // Condición de fallo del sistema (Derrota)
                     if(e.y + e.h > ship.y) {
                         gameActive = false;
                         showEndMessage("SYSTEM FAILURE", "#ff0000", "GAME OVER - ALIENS INFILTRATED");
@@ -159,30 +125,31 @@
                 }
             });
 
+            // Lógica de rebote y aumento de dificultad progresiva
             if(touchEdge) {
                 enemyDir *= -1;
                 enemies.forEach(e => e.y += 15);
                 enemySpeed += 0.05;
             }
 
-            // Victoria: No quedan aliens
+            // Verificación de éxito del servicio (Victoria)
             if(!anyAlive && gameActive) {
                 gameActive = false;
                 showEndMessage("VICTORIA TOTAL", "#0f0", "SERVICIO DESPLEGADO CON ÉXITO");
             }
 
+            // Recursividad para mantener el servicio activo (60 FPS aprox)
             if(gameActive) requestAnimationFrame(update);
         }
 
+        // Listeners: Interacción del usuario final con el servicio
         window.addEventListener("keydown", e => {
             if(e.key === "ArrowLeft" && ship.x > 0) ship.x -= 20;
             if(e.key === "ArrowRight" && ship.x < canvas.width - ship.w) ship.x += 20;
             if(e.key === " " && gameActive) bullets.push({ x: ship.x + 14, y: ship.y });
         });
 
-        init();
+        init(); // Ejecución inicial
     </script>
 </body>
 </html>
-
-:D
