@@ -1,4 +1,4 @@
-# 🛸 Retro Space Invaders - Proyecto Telemática
+# 🛸 Retro Space Invaders - Proyecto Telemática 
 
 Este proyecto consiste en el diseño e implementación de un **servicio telemático a nivel de producción**, utilizando contenedores para garantizar un despliegue rápido, escalable y persistente. Se ha desarrollado un juego clásico de "Space Invaders" como servicio consumible.
 
