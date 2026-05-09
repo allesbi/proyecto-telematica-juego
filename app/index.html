@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Space Invaders - Proyecto Telemática</title>
+    <style>
+        body { background: #000; color: #fff; text-align: center; font-family: Arial, sans-serif; }
+        canvas { border: 2px solid #fff; background: #000; display: block; margin: 20px auto; }
+        h1 { color: #0f0; }
+    </style>
+</head>
+<body>
+    <h1>SPACE INVADERS - TELEMÁTICA</h1>
+    <p>Usa las flechas para moverte y ESPACIO para disparar.</p>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        let ship = { x: 280, y: 360, w: 40, h: 20, color: "#0f0" };
+        let bullets = [];
+        let enemies = [];
+        let score = 0;
+
+        // Crear enemigos
+        for(let i=0; i<5; i++) {
+            for(let j=0; j<8; j++) {
+                enemies.push({ x: 50 + j*60, y: 30 + i*40, w: 30, h: 20, alive: true });
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Dibujar Nave
+            ctx.fillStyle = ship.color;
+            ctx.fillRect(ship.x, ship.y, ship.w, ship.h);
+
+            // Dibujar Balas
+            bullets.forEach((b, i) => {
+                b.y -= 5;
+                ctx.fillStyle = "yellow";
+                ctx.fillRect(b.x, b.y, 5, 10);
+                if(b.y < 0) bullets.splice(i, 1);
+            });
+
+            // Dibujar Enemigos
+            enemies.forEach(e => {
+                if(e.alive) {
+                    ctx.fillStyle = "red";
+                    ctx.fillRect(e.x, e.y, e.w, e.h);
+                    
+                    // Colisión con balas
+                    bullets.forEach((b, bi) => {
+                        if(b.x > e.x && b.x < e.x + e.w && b.y > e.y && b.y < e.y + e.h) {
+                            e.alive = false;
+                            bullets.splice(bi, 1);
+                            score += 10;
+                        }
+                    });
+                }
+            });
+
+            ctx.fillStyle = "white";
+            ctx.fillText("Score: " + score, 10, 20);
+            requestAnimationFrame(draw);
+        }
+
+        window.addEventListener("keydown", e => {
+            if(e.key === "ArrowLeft" && ship.x > 0) ship.x -= 15;
+            if(e.key === "ArrowRight" && ship.x < canvas.width - ship.w) ship.x += 15;
+            if(e.key === " ") bullets.push({ x: ship.x + 18, y: ship.y });
+        });
+
+        draw();
+    </script>
+</body>
+</html>
